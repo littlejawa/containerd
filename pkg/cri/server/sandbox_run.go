@@ -79,14 +79,14 @@ func (c *criService) RunPodSandbox(ctx context.Context, r *runtime.RunPodSandbox
 
 	// Reserve the sandbox name to avoid concurrent `RunPodSandbox` request starting the
 	// same sandbox.
-	if err := c.sandboxNameIndex.Reserve(name, id); err != nil {
+	if err := c.SandboxNameIndex.Reserve(name, id); err != nil {
 		return nil, fmt.Errorf("failed to reserve sandbox name %q: %w", name, err)
 	}
 	defer func() {
 		// Release the name if the function returns with an error and all the resource cleanup is done.
 		// When cleanupErr != nil, the name will be cleaned in sandbox_remove.
 		if retErr != nil && cleanupErr == nil {
-			c.sandboxNameIndex.ReleaseByName(name)
+			c.SandboxNameIndex.ReleaseByName(name)
 		}
 	}()
 
@@ -181,7 +181,7 @@ func (c *criService) RunPodSandbox(ctx context.Context, r *runtime.RunPodSandbox
 		// Put the sandbox into sandbox store when the some resource fails to be cleaned.
 		if retErr != nil && cleanupErr != nil {
 			log.G(ctx).WithError(cleanupErr).Errorf("encountered an error cleaning up failed sandbox %q, marking sandbox state as SANDBOX_UNKNOWN", id)
-			if err := c.sandboxStore.Add(sandbox); err != nil {
+			if err := c.SandboxStore.Add(sandbox); err != nil {
 				log.G(ctx).WithError(err).Errorf("failed to add sandbox %+v into store", sandbox)
 			}
 		}
@@ -387,7 +387,7 @@ func (c *criService) RunPodSandbox(ctx context.Context, r *runtime.RunPodSandbox
 		return nil, fmt.Errorf("failed to update sandbox status: %w", err)
 	}
 
-	if err := c.sandboxStore.Add(sandbox); err != nil {
+	if err := c.SandboxStore.Add(sandbox); err != nil {
 		return nil, fmt.Errorf("failed to add sandbox %+v into store: %w", sandbox, err)
 	}
 

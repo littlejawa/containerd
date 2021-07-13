@@ -49,13 +49,13 @@ func TestContainerMetricsCPUNanoCoreUsage(t *testing.T) {
 			)
 			assert.NoError(t, err)
 			assert.Nil(t, container.Stats)
-			err = c.containerStore.Add(container)
+			err = c.ContainerStore.Add(container)
 			assert.NoError(t, err)
 
 			cpuUsage, err := c.getUsageNanoCores(ID, false, test.firstCPUValue, timestamp)
 			assert.NoError(t, err)
 
-			container, err = c.containerStore.Get(ID)
+			container, err = c.ContainerStore.Get(ID)
 			assert.NoError(t, err)
 			assert.NotNil(t, container.Stats)
 
@@ -65,7 +65,7 @@ func TestContainerMetricsCPUNanoCoreUsage(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedNanoCoreUsageSecond, cpuUsage)
 
-			container, err = c.containerStore.Get(ID)
+			container, err = c.ContainerStore.Get(ID)
 			assert.NoError(t, err)
 			assert.NotNil(t, container.Stats)
 		})

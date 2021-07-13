@@ -83,13 +83,13 @@ func (c *criService) getUsageNanoCores(containerID string, isSandbox bool, curre
 	var oldStats *stats.ContainerStats
 
 	if isSandbox {
-		sandbox, err := c.sandboxStore.Get(containerID)
+		sandbox, err := c.SandboxStore.Get(containerID)
 		if err != nil {
 			return 0, fmt.Errorf("failed to get sandbox container: %s: %w", containerID, err)
 		}
 		oldStats = sandbox.Stats
 	} else {
-		container, err := c.containerStore.Get(containerID)
+		container, err := c.ContainerStore.Get(containerID)
 		if err != nil {
 			return 0, fmt.Errorf("failed to get container ID: %s: %w", containerID, err)
 		}
@@ -102,12 +102,12 @@ func (c *criService) getUsageNanoCores(containerID string, isSandbox bool, curre
 			Timestamp:            currentTimestamp,
 		}
 		if isSandbox {
-			err := c.sandboxStore.UpdateContainerStats(containerID, newStats)
+			err := c.SandboxStore.UpdateContainerStats(containerID, newStats)
 			if err != nil {
 				return 0, fmt.Errorf("failed to update sandbox stats container ID: %s: %w", containerID, err)
 			}
 		} else {
-			err := c.containerStore.UpdateContainerStats(containerID, newStats)
+			err := c.ContainerStore.UpdateContainerStats(containerID, newStats)
 			if err != nil {
 				return 0, fmt.Errorf("failed to update container stats ID: %s: %w", containerID, err)
 			}
@@ -130,13 +130,13 @@ func (c *criService) getUsageNanoCores(containerID string, isSandbox bool, curre
 		Timestamp:            currentTimestamp,
 	}
 	if isSandbox {
-		err := c.sandboxStore.UpdateContainerStats(containerID, newStats)
+		err := c.SandboxStore.UpdateContainerStats(containerID, newStats)
 		if err != nil {
 			return 0, fmt.Errorf("failed to update sandbox container stats: %s: %w", containerID, err)
 		}
 
 	} else {
-		err := c.containerStore.UpdateContainerStats(containerID, newStats)
+		err := c.ContainerStore.UpdateContainerStats(containerID, newStats)
 		if err != nil {
 			return 0, fmt.Errorf("failed to update container stats ID: %s: %w", containerID, err)
 		}
@@ -146,26 +146,26 @@ func (c *criService) getUsageNanoCores(containerID string, isSandbox bool, curre
 }
 
 func (c *criService) normalizeContainerStatsFilter(filter *runtime.ContainerStatsFilter) {
-	if cntr, err := c.containerStore.Get(filter.GetId()); err == nil {
+	if cntr, err := c.ContainerStore.Get(filter.GetId()); err == nil {
 		filter.Id = cntr.ID
 	}
-	if sb, err := c.sandboxStore.Get(filter.GetPodSandboxId()); err == nil {
+	if sb, err := c.SandboxStore.Get(filter.GetPodSandboxId()); err == nil {
 		filter.PodSandboxId = sb.ID
 	}
 }
 
 // buildTaskMetricsRequest constructs a tasks.MetricsRequest based on
-// the information in the stats request and the containerStore
+// the information in the stats request and the ContainerStore
 func (c *criService) buildTaskMetricsRequest(
 	r *runtime.ListContainerStatsRequest,
 ) (*tasks.MetricsRequest, []containerstore.Container, error) {
 	req := &tasks.MetricsRequest{}
 	if r.GetFilter() == nil {
-		return req, c.containerStore.List(), nil
+		return req, c.ContainerStore.List(), nil
 	}
 	c.normalizeContainerStatsFilter(r.GetFilter())
 	var containers []containerstore.Container
-	for _, cntr := range c.containerStore.List() {
+	for _, cntr := range c.ContainerStore.List() {
 		if r.GetFilter().GetId() != "" && cntr.ID != r.GetFilter().GetId() {
 			continue
 		}

@@ -90,7 +90,7 @@ func initCRIService(ic *plugin.InitContext) (interface{}, error) {
 		s, err = sbserver.NewCRIService(c, client)
 	} else {
 		log.G(ctx).Info("using legacy CRI server")
-		s, err = server.NewCRIService(c, client)
+		s, err = server.NewCRIService(&c, client)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CRI service: %w", err)

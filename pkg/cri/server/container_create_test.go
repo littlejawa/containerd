@@ -449,7 +449,7 @@ func TestRuntimeSnapshotter(t *testing.T) {
 	} {
 		t.Run(desc, func(t *testing.T) {
 			cri := newTestCRIService()
-			cri.config = config.Config{
+			cri.config = &config.Config{
 				PluginConfig: config.DefaultConfig(),
 			}
 			assert.Equal(t, test.expectSnapshotter, cri.runtimeSnapshotter(context.Background(), test.runtime))

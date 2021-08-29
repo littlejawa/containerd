@@ -41,7 +41,7 @@ import (
 func newTestCRIService() *criService {
 	labels := label.NewStore()
 	return &criService{
-		config:             testConfig,
+		config:             &testConfig,
 		imageFSPath:        testImageFSPath,
 		os:                 ostesting.NewFakeOS(),
 		sandboxStore:       sandboxstore.NewStore(labels),

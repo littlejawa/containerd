@@ -927,7 +927,9 @@ func TestGenerateSeccompSecurityProfileSpecOpts(t *testing.T) {
 		},
 	} {
 		t.Run(desc, func(t *testing.T) {
-			cri := &criService{}
+			cri := &criService{
+				config: &config.Config{},
+			}
 			cri.config.UnsetSeccompProfile = test.defaultProfile
 			ssp := test.sp
 			csp, err := generateSeccompSecurityProfile(

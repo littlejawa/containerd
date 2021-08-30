@@ -205,7 +205,7 @@ func toCRISandboxInfo(ctx context.Context, sandbox sandboxstore.Sandbox) (map[st
 	si.SnapshotKey = ctrInfo.SnapshotKey
 	si.Snapshotter = ctrInfo.Snapshotter
 
-	runtimeOptions, err := getRuntimeOptions(ctrInfo)
+	runtimeOptions, err := GetRuntimeOptions(ctrInfo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get runtime options: %w", err)
 	}

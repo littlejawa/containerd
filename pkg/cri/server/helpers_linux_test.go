@@ -55,7 +55,7 @@ func TestGetCgroupsPath(t *testing.T) {
 		},
 	} {
 		t.Run(desc, func(t *testing.T) {
-			got := getCgroupsPath(test.cgroupsParent, testID)
+			got := GetCgroupsPath(test.cgroupsParent, testID)
 			assert.Equal(t, test.expected, got)
 		})
 	}

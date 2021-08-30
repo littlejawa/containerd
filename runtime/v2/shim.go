@@ -555,3 +555,8 @@ func (s *shimTask) State(ctx context.Context) (runtime.State, error) {
 		ExitedAt:   protobuf.FromTimestamp(response.ExitedAt),
 	}, nil
 }
+
+func (s *shimTask) ImageService(ctx context.Context) (task.ImageService, error) {
+	imageClient := task.NewImageClient(s.Client())
+	return imageClient, nil
+}

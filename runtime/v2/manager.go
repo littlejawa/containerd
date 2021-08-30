@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/containerd/containerd/api/runtime/task/v2"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/errdefs"
 	"github.com/containerd/containerd/events/exchange"
@@ -448,6 +449,22 @@ func (m *TaskManager) Create(ctx context.Context, taskID string, opts runtime.Cr
 	}
 
 	return t, nil
+}
+
+func (m *TaskManager) PullImage(ctx context.Context, id string, req *task.PullImageRequest) (*task.PullImageResponse, error) {
+	t, err := m.Get(ctx, id)
+	if err != nil {
+		log.G(ctx).WithField("id", id).WithError(err).Error("get task")
+		return nil, err
+	}
+	shim := t.(*shimTask)
+	is, err := shim.ImageService(ctx)
+	if err != nil {
+		log.G(ctx).WithField("id", id).WithError(err).Error("get ImageService")
+		return nil, err
+	}
+	log.G(ctx).WithField("id", id).Infof("TaskManager get ImageService succeed.")
+	return is.PullImage(ctx, req)
 }
 
 // Get a specific task

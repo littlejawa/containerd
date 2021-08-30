@@ -76,6 +76,10 @@ type Runtime struct {
 	// while using default snapshotters for operational simplicity.
 	// See https://github.com/containerd/containerd/issues/6657 for details.
 	Snapshotter string `toml:"snapshotter" json:"snapshotter"`
+	// CRIHandler control cri specific implementations.
+	// e.g. The "vm" is the mode used by the vm based runtime,
+	// the "cc" is the mode used by the confidential computing.
+	CRIHandler string `toml:"cri_handler" json:"cri_handler"`
 }
 
 // ContainerdConfig contains toml config related to containerd
@@ -366,6 +370,8 @@ const (
 	// KeyModelNode is the key model where key for encrypted images reside
 	// on the worker nodes
 	KeyModelNode = "node"
+	// CriDefaultHandler is the default runtime mode
+	DefaultCRIHandler = "default"
 )
 
 // ValidatePluginConfig validates the given plugin configuration.

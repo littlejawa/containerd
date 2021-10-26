@@ -114,11 +114,11 @@ type ttrpcServerOptioner interface {
 	UnaryInterceptor() ttrpc.UnaryServerInterceptor
 }
 
-type taskService struct {
+type TaskService struct {
 	shimapi.TaskService
 }
 
-func (t taskService) RegisterTTRPC(server *ttrpc.Server) error {
+func (t TaskService) RegisterTTRPC(server *ttrpc.Server) error {
 	shimapi.RegisterTaskService(server, t.TaskService)
 	return nil
 }
@@ -298,7 +298,7 @@ func run(ctx context.Context, manager Manager, initFunc Init, name string, confi
 				plugin.EventPlugin,
 			},
 			InitFn: func(ic *plugin.InitContext) (interface{}, error) {
-				return taskService{service}, nil
+				return TaskService{service}, nil
 			},
 		})
 		manager = shimToManager{

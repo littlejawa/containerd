@@ -59,7 +59,7 @@ func (c *criService) ContainerStatus(ctx context.Context, r *runtime.ContainerSt
 			imageRef = repoDigests[0]
 		}
 	}
-	status := toCRIContainerStatus(container, spec, imageRef)
+	status := ToCRIContainerStatus(container, spec, imageRef)
 
 	if status.GetCreatedAt() == 0 {
 		// CRI doesn't allow CreatedAt == 0.
@@ -70,7 +70,7 @@ func (c *criService) ContainerStatus(ctx context.Context, r *runtime.ContainerSt
 		status.CreatedAt = info.CreatedAt.UnixNano()
 	}
 
-	info, err := toCRIContainerInfo(ctx, container, r.GetVerbose())
+	info, err := ToCRIContainerInfo(ctx, container, r.GetVerbose())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get verbose container info: %w", err)
 	}
@@ -81,8 +81,8 @@ func (c *criService) ContainerStatus(ctx context.Context, r *runtime.ContainerSt
 	}, nil
 }
 
-// toCRIContainerStatus converts internal container object to CRI container status.
-func toCRIContainerStatus(container containerstore.Container, spec *runtime.ImageSpec, imageRef string) *runtime.ContainerStatus {
+// ToCRIContainerStatus converts internal container object to CRI container status.
+func ToCRIContainerStatus(container containerstore.Container, spec *runtime.ImageSpec, imageRef string) *runtime.ContainerStatus {
 	meta := container.Metadata
 	status := container.Status.Get()
 	reason := status.Reason
@@ -139,7 +139,7 @@ type ContainerInfo struct {
 }
 
 // toCRIContainerInfo converts internal container object information to CRI container status response info map.
-func toCRIContainerInfo(ctx context.Context, container containerstore.Container, verbose bool) (map[string]string, error) {
+func ToCRIContainerInfo(ctx context.Context, container containerstore.Container, verbose bool) (map[string]string, error) {
 	if !verbose {
 		return nil, nil
 	}

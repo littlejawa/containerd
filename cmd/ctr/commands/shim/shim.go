@@ -75,6 +75,7 @@ var Command = cli.Command{
 		execCommand,
 		startCommand,
 		stateCommand,
+		pullImageCommand,
 	},
 }
 
@@ -230,6 +231,24 @@ var execCommand = cli.Command{
 	},
 }
 
+var pullImageCommand = cli.Command{
+	Name:  "pull-image",
+	Usage: "pull an image",
+	Action: func(context *cli.Context) error {
+		service, err := getImageService(context)
+		if err != nil {
+			return err
+		}
+		_, err = service.PullImage(gocontext.Background(), &task.PullImageRequest{
+			Image: context.Args().First(),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 func getTaskService(context *cli.Context) (task.TaskService, error) {
 	id := context.GlobalString("id")
 	if id == "" {
@@ -254,6 +273,31 @@ func getTaskService(context *cli.Context) (task.TaskService, error) {
 			// before, so may not be a huge deal.
 
 			return task.NewTaskClient(client), nil
+		}
+	}
+
+	return nil, fmt.Errorf("fail to connect to container %s's shim", id)
+}
+
+func getImageService(context *cli.Context) (task.ImageService, error) {
+	id := context.GlobalString("id")
+	if id == "" {
+		return nil, fmt.Errorf("container id must be specified")
+	}
+	ns := context.GlobalString("namespace")
+
+	// /containerd-shim/ns/id/shim.sock is the old way to generate shim socket.
+	s1 := filepath.Join(string(filepath.Separator), "containerd-shim", ns, id, "shim.sock")
+	// this should not error, ctr always get a default ns
+	ctx := namespaces.WithNamespace(gocontext.Background(), ns)
+	s2, _ := shim.SocketAddress(ctx, context.GlobalString("address"), id)
+	s2 = strings.TrimPrefix(s2, "unix://")
+
+	for _, socket := range []string{s2, "\x00" + s1} {
+		conn, err := net.Dial("unix", socket)
+		if err == nil {
+			client := ttrpc.NewClient(conn)
+			return task.NewImageClient(client), nil
 		}
 	}
 

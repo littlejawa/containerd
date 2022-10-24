@@ -47,7 +47,7 @@ type CRIService interface {
 
 type Controller struct {
 	// config contains all configurations.
-	config criconfig.Config
+	config *criconfig.Config
 	// client is an instance of the containerd client
 	client *containerd.Client
 	// sandboxStore stores all resources associated with sandboxes.
@@ -63,7 +63,7 @@ type Controller struct {
 }
 
 func New(
-	config criconfig.Config,
+	config *criconfig.Config,
 	client *containerd.Client,
 	sandboxStore *sandboxstore.Store,
 	os osinterface.OS,

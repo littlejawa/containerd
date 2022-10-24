@@ -45,7 +45,7 @@ var testConfig = criconfig.Config{
 func newControllerService() *Controller {
 	labels := label.NewStore()
 	return &Controller{
-		config:       testConfig,
+		config:       &testConfig,
 		os:           ostesting.NewFakeOS(),
 		sandboxStore: sandboxstore.NewStore(labels),
 	}

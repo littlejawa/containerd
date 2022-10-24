@@ -93,7 +93,7 @@ func initCRIService(ic *plugin.InitContext) (interface{}, error) {
 	var manager server.CRIService
 	if os.Getenv("ENABLE_CRI_SANDBOXES") != "" {
 		log.G(ctx).Info("using experimental CRI Sandbox server - unset ENABLE_CRI_SANDBOXES to disable")
-		manager, err = sbserver.NewCRIManager(c, client)
+		manager, err = sbserver.NewCRIManager(c, client, criStore)
 	} else {
 		log.G(ctx).Info("using legacy CRI server")
 		manager, err = server.NewCRIManager(c, client, criStore)

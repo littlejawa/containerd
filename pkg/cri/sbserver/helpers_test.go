@@ -133,7 +133,7 @@ func TestBuildLabels(t *testing.T) {
 		"a": "b",
 		"c": "d",
 	}
-	newLabels := buildLabels(configLabels, imageConfigLabels, containerKindSandbox)
+	newLabels := BuildLabels(configLabels, imageConfigLabels, containerKindSandbox)
 	assert.Len(t, newLabels, 4)
 	assert.Equal(t, "b", newLabels["a"])
 	assert.Equal(t, "d", newLabels["c"])
@@ -484,7 +484,7 @@ func TestPassThroughAnnotationsFilter(t *testing.T) {
 		},
 	} {
 		t.Run(desc, func(t *testing.T) {
-			passthroughAnnotations := getPassthroughAnnotations(test.podAnnotations, test.runtimePodAnnotations)
+			passthroughAnnotations := GetPassthroughAnnotations(test.podAnnotations, test.runtimePodAnnotations)
 			assert.Equal(t, test.passthroughAnnotations, passthroughAnnotations)
 		})
 	}
@@ -607,11 +607,11 @@ func TestValidateTargetContainer(t *testing.T) {
 }
 
 func TestGetRuntimeOptions(t *testing.T) {
-	_, err := getRuntimeOptions(containers.Container{})
+	_, err := GetRuntimeOptions(containers.Container{})
 	require.NoError(t, err)
 
 	var pbany *types.Any               // This is nil.
 	var typeurlAny typeurl.Any = pbany // This is typed nil.
-	_, err = getRuntimeOptions(containers.Container{Runtime: containers.RuntimeInfo{Options: typeurlAny}})
+	_, err = GetRuntimeOptions(containers.Container{Runtime: containers.RuntimeInfo{Options: typeurlAny}})
 	require.NoError(t, err)
 }

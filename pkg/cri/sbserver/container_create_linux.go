@@ -61,7 +61,7 @@ const (
 func (c *criService) containerMounts(sandboxID string, config *runtime.ContainerConfig) []*runtime.Mount {
 	var mounts []*runtime.Mount
 	securityContext := config.GetLinux().GetSecurityContext()
-	if !isInCRIMounts(etcHostname, config.GetMounts()) {
+	if !IsInCRIMounts(etcHostname, config.GetMounts()) {
 		// /etc/hostname is added since 1.1.6, 1.2.4 and 1.3.
 		// For in-place upgrade, the old sandbox doesn't have the hostname file,
 		// do not mount this in that case.
@@ -78,7 +78,7 @@ func (c *criService) containerMounts(sandboxID string, config *runtime.Container
 		}
 	}
 
-	if !isInCRIMounts(etcHosts, config.GetMounts()) {
+	if !IsInCRIMounts(etcHosts, config.GetMounts()) {
 		mounts = append(mounts, &runtime.Mount{
 			ContainerPath:  etcHosts,
 			HostPath:       c.getSandboxHosts(sandboxID),
@@ -89,7 +89,7 @@ func (c *criService) containerMounts(sandboxID string, config *runtime.Container
 
 	// Mount sandbox resolv.config.
 	// TODO: Need to figure out whether we should always mount it as read-only
-	if !isInCRIMounts(resolvConfPath, config.GetMounts()) {
+	if !IsInCRIMounts(resolvConfPath, config.GetMounts()) {
 		mounts = append(mounts, &runtime.Mount{
 			ContainerPath:  resolvConfPath,
 			HostPath:       c.getResolvPath(sandboxID),
@@ -98,7 +98,7 @@ func (c *criService) containerMounts(sandboxID string, config *runtime.Container
 		})
 	}
 
-	if !isInCRIMounts(devShm, config.GetMounts()) {
+	if !IsInCRIMounts(devShm, config.GetMounts()) {
 		sandboxDevShm := c.getSandboxDevShm(sandboxID)
 		if securityContext.GetNamespaceOptions().GetIpc() == runtime.NamespaceMode_NODE {
 			sandboxDevShm = devShm
@@ -173,7 +173,7 @@ func (c *criService) containerSpec(
 	specOpts = append(specOpts, oci.WithEnv(env))
 
 	securityContext := config.GetLinux().GetSecurityContext()
-	labelOptions, err := toLabel(securityContext.GetSelinuxOptions())
+	labelOptions, err := ToLabel(securityContext.GetSelinuxOptions())
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func (c *criService) containerSpec(
 	} else {
 		specOpts = append(specOpts, customopts.WithResources(config.GetLinux().GetResources(), c.config.TolerateMissingHugetlbController, c.config.DisableHugetlbController))
 		if sandboxConfig.GetLinux().GetCgroupParent() != "" {
-			cgroupsPath := getCgroupsPath(sandboxConfig.GetLinux().GetCgroupParent(), id)
+			cgroupsPath := GetCgroupsPath(sandboxConfig.GetLinux().GetCgroupParent(), id)
 			specOpts = append(specOpts, oci.WithCgroup(cgroupsPath))
 		}
 	}
@@ -286,12 +286,12 @@ func (c *criService) containerSpec(
 		specOpts = append(specOpts, oci.WithRdt(rdtClass, "", ""))
 	}
 
-	for pKey, pValue := range getPassthroughAnnotations(sandboxConfig.Annotations,
+	for pKey, pValue := range GetPassthroughAnnotations(sandboxConfig.Annotations,
 		ociRuntime.PodAnnotations) {
 		specOpts = append(specOpts, customopts.WithAnnotation(pKey, pValue))
 	}
 
-	for pKey, pValue := range getPassthroughAnnotations(config.Annotations,
+	for pKey, pValue := range GetPassthroughAnnotations(config.Annotations,
 		ociRuntime.ContainerAnnotations) {
 		specOpts = append(specOpts, customopts.WithAnnotation(pKey, pValue))
 	}
@@ -341,7 +341,7 @@ func (c *criService) containerSpecOpts(config *runtime.ContainerConfig, imageCon
 	// Set container username. This could only be done by containerd, because it needs
 	// access to the container rootfs. Pass user name to containerd, and let it overwrite
 	// the spec for us.
-	userstr, err := generateUserString(
+	userstr, err := GenerateUserString(
 		securityContext.GetRunAsUsername(),
 		securityContext.GetRunAsUser(),
 		securityContext.GetRunAsGroup())
@@ -368,12 +368,12 @@ func (c *criService) containerSpecOpts(config *runtime.ContainerConfig, imageCon
 
 	asp := securityContext.GetApparmor()
 	if asp == nil {
-		asp, err = generateApparmorSecurityProfile(securityContext.GetApparmorProfile()) //nolint:staticcheck // Deprecated but we don't want to remove yet
+		asp, err = GenerateApparmorSecurityProfile(securityContext.GetApparmorProfile()) //nolint:staticcheck // Deprecated but we don't want to remove yet
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate apparmor spec opts: %w", err)
 		}
 	}
-	apparmorSpecOpts, err := generateApparmorSpecOpts(
+	apparmorSpecOpts, err := GenerateApparmorSpecOpts(
 		asp,
 		securityContext.GetPrivileged(),
 		c.apparmorEnabled())
@@ -386,17 +386,17 @@ func (c *criService) containerSpecOpts(config *runtime.ContainerConfig, imageCon
 
 	ssp := securityContext.GetSeccomp()
 	if ssp == nil {
-		ssp, err = generateSeccompSecurityProfile(
+		ssp, err = GenerateSeccompSecurityProfile(
 			securityContext.GetSeccompProfilePath(), //nolint:staticcheck // Deprecated but we don't want to remove yet
 			c.config.UnsetSeccompProfile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate seccomp spec opts: %w", err)
 		}
 	}
-	seccompSpecOpts, err := c.generateSeccompSpecOpts(
+	seccompSpecOpts, err := GenerateSeccompSpecOpts(
 		ssp,
 		securityContext.GetPrivileged(),
-		c.seccompEnabled())
+		SeccompEnabled())
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate seccomp spec opts: %w", err)
 	}
@@ -409,7 +409,7 @@ func (c *criService) containerSpecOpts(config *runtime.ContainerConfig, imageCon
 	return specOpts, nil
 }
 
-func generateSeccompSecurityProfile(profilePath string, unsetProfilePath string) (*runtime.SecurityProfile, error) {
+func GenerateSeccompSecurityProfile(profilePath string, unsetProfilePath string) (*runtime.SecurityProfile, error) {
 	if profilePath != "" {
 		return generateSecurityProfile(profilePath)
 	}
@@ -418,7 +418,7 @@ func generateSeccompSecurityProfile(profilePath string, unsetProfilePath string)
 	}
 	return nil, nil
 }
-func generateApparmorSecurityProfile(profilePath string) (*runtime.SecurityProfile, error) {
+func GenerateApparmorSecurityProfile(profilePath string) (*runtime.SecurityProfile, error) {
 	if profilePath != "" {
 		return generateSecurityProfile(profilePath)
 	}
@@ -447,13 +447,13 @@ func generateSecurityProfile(profilePath string) (*runtime.SecurityProfile, erro
 	}
 }
 
-// generateSeccompSpecOpts generates containerd SpecOpts for seccomp.
-func (c *criService) generateSeccompSpecOpts(sp *runtime.SecurityProfile, privileged, seccompEnabled bool) (oci.SpecOpts, error) {
+// GenerateSeccompSpecOpts generates containerd SpecOpts for seccomp.
+func GenerateSeccompSpecOpts(sp *runtime.SecurityProfile, privileged, SeccompEnabled bool) (oci.SpecOpts, error) {
 	if privileged {
 		// Do not set seccomp profile when container is privileged
 		return nil, nil
 	}
-	if !seccompEnabled {
+	if !SeccompEnabled {
 		if sp != nil {
 			if sp.ProfileType != runtime.SecurityProfile_Unconfined {
 				return nil, errors.New("seccomp is not supported")
@@ -484,8 +484,8 @@ func (c *criService) generateSeccompSpecOpts(sp *runtime.SecurityProfile, privil
 	}
 }
 
-// generateApparmorSpecOpts generates containerd SpecOpts for apparmor.
-func generateApparmorSpecOpts(sp *runtime.SecurityProfile, privileged, apparmorEnabled bool) (oci.SpecOpts, error) {
+// GenerateApparmorSpecOpts generates containerd SpecOpts for apparmor.
+func GenerateApparmorSpecOpts(sp *runtime.SecurityProfile, privileged, apparmorEnabled bool) (oci.SpecOpts, error) {
 	if !apparmorEnabled {
 		// Should fail loudly if user try to specify apparmor profile
 		// but we don't support it.
@@ -561,7 +561,7 @@ func appArmorProfileExists(profile string) (bool, error) {
 	}
 }
 
-// generateUserString generates valid user string based on OCI Image Spec
+// GenerateUserString generates valid user string based on OCI Image Spec
 // v1.0.0.
 //
 // CRI defines that the following combinations are valid:
@@ -576,7 +576,7 @@ func appArmorProfileExists(profile string) (bool, error) {
 // gid -> error
 //
 // TODO(random-liu): Add group name support in CRI.
-func generateUserString(username string, uid, gid *runtime.Int64Value) (string, error) {
+func GenerateUserString(username string, uid, gid *runtime.Int64Value) (string, error) {
 	var userstr, groupstr string
 	if uid != nil {
 		userstr = strconv.FormatInt(uid.GetValue(), 10)

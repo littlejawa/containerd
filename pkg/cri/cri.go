@@ -81,10 +81,6 @@ func initCRIService(ic *plugin.InitContext) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CRI store services: %w", err)
 	}
-	criPlugins, err := getCRIPlugin(ic)
-	if err != nil && !errors.Is(err, errdefs.ErrNotFound) {
-		return nil, fmt.Errorf("failed to get CRI plugin: %w", err)
-	}
 
 	log.G(ctx).Info("Connect containerd service")
 	client, err := containerd.New(
@@ -99,9 +95,17 @@ func initCRIService(ic *plugin.InitContext) (interface{}, error) {
 
 	var manager server.CRIService
 	if os.Getenv("ENABLE_CRI_SANDBOXES") != "" {
+		criPlugins, err2 := getSbserverCRIPlugin(ic)
+		if err2 != nil && !errors.Is(err, errdefs.ErrNotFound) {
+			return nil, fmt.Errorf("failed to get CRI plugin: %w", err)
+		}
 		log.G(ctx).Info("using experimental CRI Sandbox server - unset ENABLE_CRI_SANDBOXES to disable")
-		manager, err = sbserver.NewCRIManager(c, client, criStore)
+		manager, err = sbserver.NewCRIManager(c, client, criStore, criPlugins)
 	} else {
+		criPlugins, err2 := getServerCRIPlugin(ic)
+		if err2 != nil && !errors.Is(err, errdefs.ErrNotFound) {
+			return nil, fmt.Errorf("failed to get CRI plugin: %w", err)
+		}
 		log.G(ctx).Info("using legacy CRI server")
 		manager, err = server.NewCRIManager(c, client, criStore, criPlugins)
 	}
@@ -135,7 +139,7 @@ func getCRIStore(ic *plugin.InitContext) (*cristore.Store, error) {
 }
 
 // getCRIPlugin get cri services from plugin context
-func getCRIPlugin(ic *plugin.InitContext) (map[string]server.CRIPlugin, error) {
+func getServerCRIPlugin(ic *plugin.InitContext) (map[string]server.CRIPlugin, error) {
 	criPlugins := map[string]server.CRIPlugin{}
 	plugins, err := ic.GetByType(plugin.CRIPlugin)
 	if err != nil {
@@ -148,6 +152,23 @@ func getCRIPlugin(ic *plugin.InitContext) (map[string]server.CRIPlugin, error) {
 		}
 		// plugin.Registration.ID as key
 		criPlugins[k] = i.(server.CRIPlugin)
+	}
+	return criPlugins, nil
+}
+
+func getSbserverCRIPlugin(ic *plugin.InitContext) (map[string]sbserver.CRIPlugin, error) {
+	criPlugins := map[string]sbserver.CRIPlugin{}
+	plugins, err := ic.GetByType(plugin.CRIPlugin)
+	if err != nil {
+		return criPlugins, fmt.Errorf("failed to get cri plugin: %w", err)
+	}
+	for k, v := range plugins {
+		i, err := v.Instance()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance of service %q: %w", k, err)
+		}
+		// plugin.Registration.ID as key
+		criPlugins[k] = i.(sbserver.CRIPlugin)
 	}
 	return criPlugins, nil
 }
